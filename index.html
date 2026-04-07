@@ -416,6 +416,100 @@
       from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
+
+    /* ── TRIVIA OVERLAY ── */
+    #trivia-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    #trivia-card {
+      background: #080808;
+      border: 1px solid #1e1e1e;
+      border-radius: 3px;
+      padding: 36px 40px;
+      max-width: 480px;
+      width: 90vw;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      animation: fadeIn 0.3s ease forwards;
+    }
+    #trivia-label {
+      font-size: 10px;
+      letter-spacing: 0.32em;
+      color: #2e2e2e;
+      text-transform: uppercase;
+    }
+    #trivia-question {
+      font-size: clamp(14px, 2vw, 17px);
+      color: #bbb;
+      line-height: 1.55;
+      letter-spacing: 0.02em;
+    }
+    #trivia-opts {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .trivia-opt {
+      background: transparent;
+      border: 1px solid #1e1e1e;
+      color: #666;
+      font-family: 'Georgia', serif;
+      font-size: clamp(12px, 1.5vw, 14px);
+      padding: 10px 16px;
+      cursor: pointer;
+      text-align: left;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .trivia-opt:hover:not(:disabled) { border-color: #444; color: #ddd; }
+    .trivia-opt:disabled { cursor: default; }
+    .trivia-opt.correct { border-color: #2a6e2a; color: #5db85d; background: #050f05; }
+    .trivia-opt.wrong   { border-color: #5c1e1e; color: #8a4444; background: #0f0505; }
+    #trivia-skip {
+      background: transparent;
+      border: none;
+      color: #222;
+      font-family: 'Georgia', serif;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      text-align: center;
+      padding: 2px;
+      margin-top: 2px;
+      transition: color 0.2s;
+    }
+    #trivia-skip:hover { color: #555; }
+
+    /* ── TRIVIA TOGGLE BTN ── */
+    #trivia-toggle-btn {
+      position: fixed;
+      bottom: 26px; left: 26px;
+      background: #c8a800;
+      border: none;
+      color: #000;
+      font-family: 'Georgia', serif;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      text-transform: lowercase;
+      transition: left 0.5s ease, top 0.5s ease, bottom 0.5s ease;
+      max-width: 160px;
+      text-align: center;
+      line-height: 1.4;
+      padding: 8px 12px;
+      border-radius: 2px;
+      z-index: 200;
+    }
+    #trivia-toggle-btn:hover { background: #e0be00; }
   </style>
 </head>
 <body>
@@ -462,6 +556,19 @@
   <button id="pause-btn" onclick="togglePause()">pause</button>
   <div id="progress-bar"></div>
   <div id="bg-picker"></div>
+</div>
+
+<!-- TRIVIA TOGGLE (always present) -->
+<button id="trivia-toggle-btn" onclick="toggleTrivia()">turn trivia annoying ahh mode off</button>
+
+<!-- TRIVIA OVERLAY -->
+<div id="trivia-overlay">
+  <div id="trivia-card">
+    <span id="trivia-label">trivia interruption</span>
+    <p id="trivia-question"></p>
+    <div id="trivia-opts"></div>
+    <button id="trivia-skip" onclick="dismissTrivia()">skip →</button>
+  </div>
 </div>
 
 <!-- DONE -->
@@ -697,8 +804,11 @@ function startReader() {
   document.documentElement.style.setProperty('--orp', '#e84040');
 
   buildBgPicker();
+  triviaOn = true;
+  document.getElementById('trivia-toggle-btn').textContent = 'turn trivia annoying ahh mode off';
   clearTimeout(wordTimer);
   showNextWord();
+  scheduleTrivia();
 }
 
 function startSame() {
@@ -749,6 +859,8 @@ function finish() {
 
 function showMenu() {
   clearTimeout(wordTimer);
+  clearTimeout(triviaTimer);
+  document.getElementById('trivia-overlay').style.display = 'none';
   paused = false;
   document.getElementById('reader').style.display = 'none';
   document.getElementById('done-screen').style.display = 'none';
@@ -765,6 +877,116 @@ document.addEventListener('keydown', e => {
   if (e.code === 'Space' && document.getElementById('reader').style.display !== 'none') {
     e.preventDefault();
     togglePause();
+  }
+});
+
+// ── TRIVIA ───────────────────────────────────────────────────
+const TRIVIA = [
+  { q: "What is the only mammal capable of true flight?", opts: ["Flying squirrel", "Bat", "Sugar glider", "Colugo"], answer: 1 },
+  { q: "How many hearts does an octopus have?", opts: ["1", "2", "3", "4"], answer: 2 },
+  { q: "What country consumes the most chocolate per capita?", opts: ["Belgium", "USA", "Switzerland", "Germany"], answer: 2 },
+  { q: "Which planet has the most moons?", opts: ["Jupiter", "Saturn", "Uranus", "Neptune"], answer: 1 },
+  { q: "What is the longest bone in the human body?", opts: ["Spine", "Femur", "Tibia", "Humerus"], answer: 1 },
+  { q: "How many sides does a dodecagon have?", opts: ["10", "11", "12", "13"], answer: 2 },
+  { q: "What language has the most native speakers in the world?", opts: ["English", "Spanish", "Hindi", "Mandarin"], answer: 3 },
+  { q: "What is the smallest country in the world by area?", opts: ["Monaco", "San Marino", "Vatican City", "Liechtenstein"], answer: 2 },
+  { q: "Which element has the chemical symbol Au?", opts: ["Silver", "Gold", "Aluminum", "Argon"], answer: 1 },
+  { q: "How many bones are in the adult human body?", opts: ["196", "206", "216", "226"], answer: 1 },
+  { q: "What is the approximate speed of light?", opts: ["300,000 km/s", "150,000 km/s", "450,000 km/s", "600,000 km/s"], answer: 0 },
+  { q: "Who wrote Crime and Punishment?", opts: ["Tolstoy", "Chekhov", "Dostoevsky", "Turgenev"], answer: 2 },
+  { q: "What is the most abundant gas in Earth's atmosphere?", opts: ["Oxygen", "Carbon dioxide", "Argon", "Nitrogen"], answer: 3 },
+  { q: "In what year did the Berlin Wall fall?", opts: ["1987", "1988", "1989", "1991"], answer: 2 },
+  { q: "What fruit is called the 'king of fruits' in Southeast Asia?", opts: ["Mango", "Durian", "Jackfruit", "Rambutan"], answer: 1 },
+  { q: "Which ocean is the largest?", opts: ["Atlantic", "Indian", "Arctic", "Pacific"], answer: 3 },
+  { q: "What is the hardest natural substance on Earth?", opts: ["Ruby", "Diamond", "Quartz", "Sapphire"], answer: 1 },
+  { q: "Which country invented paper?", opts: ["Egypt", "Japan", "China", "Greece"], answer: 2 },
+  { q: "How many chambers does the human heart have?", opts: ["2", "3", "4", "5"], answer: 2 },
+  { q: "What is the collective noun for a group of flamingos?", opts: ["Flock", "Flamboyance", "Flutter", "Flush"], answer: 1 },
+];
+
+let triviaOn = true;
+let triviaTimer = null;
+let triviaWasPaused = false;
+
+function scheduleTrivia() {
+  clearTimeout(triviaTimer);
+  if (triviaOn) triviaTimer = setTimeout(showTrivia, 10000);
+}
+
+function showTrivia() {
+  if (!triviaOn) return;
+  triviaWasPaused = paused;
+  if (!paused) { paused = true; clearTimeout(wordTimer); }
+
+  const q = TRIVIA[Math.floor(Math.random() * TRIVIA.length)];
+  document.getElementById('trivia-question').textContent = q.q;
+  const optsEl = document.getElementById('trivia-opts');
+  optsEl.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'trivia-opt';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => {
+      optsEl.querySelectorAll('.trivia-opt').forEach(b => b.disabled = true);
+      btn.classList.add(i === q.answer ? 'correct' : 'wrong');
+      if (i !== q.answer) optsEl.querySelectorAll('.trivia-opt')[q.answer].classList.add('correct');
+      setTimeout(dismissTrivia, 1800);
+    });
+    optsEl.appendChild(btn);
+  });
+
+  document.getElementById('trivia-overlay').style.display = 'flex';
+}
+
+function dismissTrivia() {
+  document.getElementById('trivia-overlay').style.display = 'none';
+  if (!triviaWasPaused) { paused = false; showNextWord(); }
+  scheduleTrivia();
+}
+
+function toggleTrivia() {
+  triviaOn = !triviaOn;
+  const btn = document.getElementById('trivia-toggle-btn');
+  btn.textContent = triviaOn ? 'turn trivia annoying ahh mode off' : 'turn trivia annoying ahh mode on';
+  if (triviaOn) scheduleTrivia();
+  else clearTimeout(triviaTimer);
+}
+
+// ── RUNAWAY BUTTON ───────────────────────────────────────────
+let btnX = null, btnY = null;
+
+document.addEventListener('mousemove', (e) => {
+  const btn = document.getElementById('trivia-toggle-btn');
+  const rect = btn.getBoundingClientRect();
+
+  // initialise position from current CSS on first move
+  if (btnX === null) {
+    btnX = rect.left;
+    btnY = rect.top;
+    btn.style.bottom = 'auto';
+    btn.style.right  = 'auto';
+    btn.style.left   = btnX + 'px';
+    btn.style.top    = btnY + 'px';
+  }
+
+  const cx = rect.left + rect.width  / 2;
+  const cy = rect.top  + rect.height / 2;
+  const dx = e.clientX - cx;
+  const dy = e.clientY - cy;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+
+  if (dist < 110) {
+    const angle = Math.atan2(dy, dx);
+    const step  = 55;
+    btnX -= Math.cos(angle) * step;
+    btnY -= Math.sin(angle) * step;
+
+    // keep fully inside viewport
+    btnX = Math.max(8, Math.min(window.innerWidth  - rect.width  - 8, btnX));
+    btnY = Math.max(8, Math.min(window.innerHeight - rect.height - 8, btnY));
+
+    btn.style.left = btnX + 'px';
+    btn.style.top  = btnY + 'px';
   }
 });
 </script>
