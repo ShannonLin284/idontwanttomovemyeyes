@@ -528,14 +528,6 @@
   <button id="speed-back-btn" onclick="showMenu()">←</button>
   <h2>choose your level of difficulty</h2>
   <div class="level-grid" id="level-grid"></div>
-  <div class="boring-slider-wrap">
-    <span class="boring-label">if you're boring and want to choose yourself</span>
-    <div class="boring-row">
-      <input type="range" id="boring-slider" min="80" max="700" step="10" value="250"
-        oninput="onBoringSlider(this.value)" />
-      <span id="boring-wpm-display">250 wpm</span>
-    </div>
-  </div>
   <button id="go-btn" onclick="launchReader()">go →</button>
 </div>
 
@@ -544,10 +536,6 @@
   <div id="orp-guide"></div>
   <div id="category-label"></div>
   <button id="back-btn" onclick="showMenu()">←</button>
-
-  <div id="speed-control">
-    <span id="wpm-label">250 wpm</span>
-  </div>
 
   <div id="word-display">
     <span id="word-left"></span><span id="word-orp"></span><span id="word-right"></span>
@@ -720,29 +708,18 @@ function buildLevelGrid() {
   LEVELS.forEach((lvl, i) => {
     const btn = document.createElement('button');
     btn.className = 'level-btn' + (i === 3 ? ' selected' : '');
-    btn.innerHTML = `<span>${lvl.name}</span><span class="level-wpm">${lvl.wpm} wpm</span>`;
+    btn.innerHTML = `<span>${lvl.name}</span>`;
     btn.addEventListener('click', () => {
       document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       msPerWord = wpmToMs(lvl.wpm);
-      // sync boring slider
-      document.getElementById('boring-slider').value = lvl.wpm;
-      document.getElementById('boring-wpm-display').textContent = lvl.wpm + ' wpm';
     });
     grid.appendChild(btn);
   });
   // default to level 4 (index 3)
   msPerWord = wpmToMs(LEVELS[3].wpm);
-  document.getElementById('boring-slider').value = LEVELS[3].wpm;
-  document.getElementById('boring-wpm-display').textContent = LEVELS[3].wpm + ' wpm';
 }
 
-function onBoringSlider(val) {
-  msPerWord = wpmToMs(parseInt(val));
-  document.getElementById('boring-wpm-display').textContent = val + ' wpm';
-  // deselect all level buttons
-  document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('selected'));
-}
 
 function pickCategory(category) {
   currentCategory = category;
@@ -797,7 +774,6 @@ function startReader() {
   const reader = document.getElementById('reader');
   reader.style.display = 'flex';
   document.getElementById('category-label').textContent = LABELS[currentCategory];
-  document.getElementById('wpm-label').textContent = Math.round(60000 / msPerWord) + ' wpm';
   document.getElementById('pause-btn').textContent = 'pause';
   document.getElementById('progress-bar').style.width = '0%';
 
@@ -863,8 +839,6 @@ function finish() {
 
 function showMenu() {
   clearTimeout(wordTimer);
-  clearTimeout(triviaTimer);
-  document.getElementById('trivia-overlay').style.display = 'none';
   paused = false;
   document.getElementById('reader').style.display = 'none';
   document.getElementById('done-screen').style.display = 'none';
@@ -944,7 +918,9 @@ function showTrivia() {
 
 function dismissTrivia() {
   document.getElementById('trivia-overlay').style.display = 'none';
-  if (!triviaWasPaused) { paused = false; showNextWord(); }
+  const readerActive = document.getElementById('reader').style.display !== 'none';
+  if (readerActive && !triviaWasPaused) { paused = false; showNextWord(); }
+  else if (readerActive && triviaWasPaused) { paused = true; }
   scheduleTrivia();
 }
 
@@ -955,6 +931,9 @@ function toggleTrivia() {
   if (triviaOn) scheduleTrivia();
   else clearTimeout(triviaTimer);
 }
+
+// start trivia running from page load
+scheduleTrivia();
 
 // ── RUNAWAY BUTTON ───────────────────────────────────────────
 let btnX = null, btnY = null;
