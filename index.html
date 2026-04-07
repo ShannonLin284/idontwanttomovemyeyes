@@ -425,7 +425,7 @@
       background: rgba(0,0,0,0.88);
       align-items: center;
       justify-content: center;
-      z-index: 100;
+      z-index: 9999;
     }
     #trivia-card {
       background: #080808;
@@ -664,6 +664,10 @@ let msPerWord = 240; // 250 wpm default
 let paused = false;
 let currentCategory = null;
 
+let triviaOn = true;
+let triviaTimer = null;
+let triviaWasPaused = false;
+
 // ── ORP INDEX ────────────────────────────────────────────────
 // Spritz-style: the "focus letter" is roughly 30% into the word.
 // Strip leading/trailing punctuation when measuring length.
@@ -882,31 +886,31 @@ document.addEventListener('keydown', e => {
 
 // ── TRIVIA ───────────────────────────────────────────────────
 const TRIVIA = [
-  { q: "What is the only mammal capable of true flight?", opts: ["Flying squirrel", "Bat", "Sugar glider", "Colugo"], answer: 1 },
-  { q: "How many hearts does an octopus have?", opts: ["1", "2", "3", "4"], answer: 2 },
-  { q: "What country consumes the most chocolate per capita?", opts: ["Belgium", "USA", "Switzerland", "Germany"], answer: 2 },
-  { q: "Which planet has the most moons?", opts: ["Jupiter", "Saturn", "Uranus", "Neptune"], answer: 1 },
-  { q: "What is the longest bone in the human body?", opts: ["Spine", "Femur", "Tibia", "Humerus"], answer: 1 },
-  { q: "How many sides does a dodecagon have?", opts: ["10", "11", "12", "13"], answer: 2 },
-  { q: "What language has the most native speakers in the world?", opts: ["English", "Spanish", "Hindi", "Mandarin"], answer: 3 },
-  { q: "What is the smallest country in the world by area?", opts: ["Monaco", "San Marino", "Vatican City", "Liechtenstein"], answer: 2 },
-  { q: "Which element has the chemical symbol Au?", opts: ["Silver", "Gold", "Aluminum", "Argon"], answer: 1 },
-  { q: "How many bones are in the adult human body?", opts: ["196", "206", "216", "226"], answer: 1 },
-  { q: "What is the approximate speed of light?", opts: ["300,000 km/s", "150,000 km/s", "450,000 km/s", "600,000 km/s"], answer: 0 },
-  { q: "Who wrote Crime and Punishment?", opts: ["Tolstoy", "Chekhov", "Dostoevsky", "Turgenev"], answer: 2 },
-  { q: "What is the most abundant gas in Earth's atmosphere?", opts: ["Oxygen", "Carbon dioxide", "Argon", "Nitrogen"], answer: 3 },
-  { q: "In what year did the Berlin Wall fall?", opts: ["1987", "1988", "1989", "1991"], answer: 2 },
-  { q: "What fruit is called the 'king of fruits' in Southeast Asia?", opts: ["Mango", "Durian", "Jackfruit", "Rambutan"], answer: 1 },
-  { q: "Which ocean is the largest?", opts: ["Atlantic", "Indian", "Arctic", "Pacific"], answer: 3 },
-  { q: "What is the hardest natural substance on Earth?", opts: ["Ruby", "Diamond", "Quartz", "Sapphire"], answer: 1 },
-  { q: "Which country invented paper?", opts: ["Egypt", "Japan", "China", "Greece"], answer: 2 },
-  { q: "How many chambers does the human heart have?", opts: ["2", "3", "4", "5"], answer: 2 },
-  { q: "What is the collective noun for a group of flamingos?", opts: ["Flock", "Flamboyance", "Flutter", "Flush"], answer: 1 },
+  { q: "What is the name of the font used on the Hollywood sign?", opts: ["Clarendon", "Spencerian Script", "No standard font — it's hand-lettered", "Helvetica Bold"], answer: 2 },
+  { q: "How many times does the word 'very' appear in the King James Bible?", opts: ["0", "34", "289", "1,102"], answer: 0 },
+  { q: "What was the original purpose of the Eiffel Tower?", opts: ["War observation post", "Radio transmission tower", "Temporary entrance arch for the 1889 World's Fair", "Monument to Napoleon"], answer: 2 },
+  { q: "Which US president had a pet hyena?", opts: ["Theodore Roosevelt", "Martin Van Buren", "John Quincy Adams", "Herbert Hoover"], answer: 0 },
+  { q: "What is the Lindy effect?", opts: ["A swing dance from the 1920s", "The longer something has survived, the longer it's likely to keep surviving", "The tendency for news to spread slower than it spreads back", "A cognitive bias toward linear thinking"], answer: 1 },
+  { q: "What color is a mirror?", opts: ["White", "Silver", "Slightly green", "It has no color"], answer: 2 },
+  { q: "In what year was the fax machine invented?", opts: ["1964", "1902", "1843", "1876"], answer: 2 },
+  { q: "What is the most shoplifted book in the world?", opts: ["The Bible", "The Guinness Book of World Records", "The Catcher in the Rye", "Harry Potter"], answer: 0 },
+  { q: "How long did the Hundred Years' War actually last?", opts: ["100 years", "112 years", "87 years", "116 years"], answer: 3 },
+  { q: "What flavor is a McRib patty shaped to resemble?", opts: ["No particular shape — it's just flat", "A rack of ribs", "A pork chop", "A pulled pork sandwich"], answer: 1 },
+  { q: "Which planet rains diamonds?", opts: ["Jupiter", "Saturn", "Uranus and Neptune", "Venus"], answer: 2 },
+  { q: "What does the 'H' stand for in Jesus H. Christ?", opts: ["It doesn't stand for anything — it's a printing error from old typesetting", "Harold, from 'Our Father who art in heaven, Harold be thy name'", "Holy", "It's a monogram from the Greek ΙΧΘΥΣ"], answer: 0 },
+  { q: "How many golf balls fit on a school bus?", opts: ["Around 500", "Around 2,500", "Around 8,000", "Around 50,000"], answer: 2 },
+  { q: "What is a group of crows called?", opts: ["A flock", "A murder", "A parliament", "A conspiracy"], answer: 1 },
+  { q: "Who invented the shopping cart?", opts: ["Henry Ford", "Sylvan Goldman", "A Piggly Wiggly employee in 1920", "Sam Walton"], answer: 1 },
+  { q: "What is the longest word you can type using only the top row of a keyboard?", opts: ["TYPEWRITER", "PERPETUITY", "PROPRIETOR", "PROTOTYPE"], answer: 0 },
+  { q: "What is the official state fossil of California?", opts: ["T. Rex", "The saber-toothed cat", "The woolly mammoth", "A giant ground sloth"], answer: 1 },
+  { q: "How many hearts does a hagfish have?", opts: ["1", "2", "3", "4"], answer: 3 },
+  { q: "What does a 'jiffy' actually measure in physics?", opts: ["One millisecond", "The time it takes light to travel 1 centimeter", "0.01 seconds", "One frame of film at 24fps"], answer: 1 },
+  { q: "What was Coca-Cola's original color?", opts: ["Clear", "Brown", "Green", "It was always the same"], answer: 2 },
+  { q: "How many muscles does a caterpillar have?", opts: ["Around 100", "Around 800", "Around 4,000", "Around 12,000"], answer: 2 },
+  { q: "What is the name of the font on the 'I ♥ NY' logo?", opts: ["Helvetica", "American Typewriter", "Futura", "Times New Roman"], answer: 1 },
+  { q: "What country has the most natural lakes?", opts: ["Russia", "USA", "Finland", "Canada"], answer: 3 },
+  { q: "What was the first item ever bought and sold on the internet?", opts: ["A book", "A pizza", "A bag of marijuana", "A broken laser pointer"], answer: 2 },
 ];
-
-let triviaOn = true;
-let triviaTimer = null;
-let triviaWasPaused = false;
 
 function scheduleTrivia() {
   clearTimeout(triviaTimer);
