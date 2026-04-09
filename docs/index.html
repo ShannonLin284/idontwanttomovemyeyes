@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>one word at a time</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #000;
+      --text: #fff;
+      --orp: #e84040;
+      --dim: #444;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── MENU ── */
+    #menu {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    #menu h1 {
+      font-size: clamp(13px, 1.8vw, 18px);
+      letter-spacing: 0.28em;
+      font-weight: 400;
+      color: var(--dim);
+      margin-bottom: 16px;
+      text-transform: lowercase;
+    }
+
+    .choice-btn {
+      background: transparent;
+      border: 1px solid #2a2a2a;
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      font-size: clamp(15px, 2vw, 21px);
+      padding: 13px 38px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      width: 360px;
+      text-align: left;
+      transition: border-color 0.2s, background 0.2s;
+      border-radius: 2px;
+    }
+    .choice-btn:hover { border-color: #fff; background: #0d0d0d; }
+    .choice-btn .emoji { margin-right: 14px; opacity: 0.6; }
+
+    /* ── SPEED SCREEN ── */
+    #speed-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      animation: fadeIn 0.5s ease forwards;
+      width: min(640px, 92vw);
+    }
+
+    #speed-screen h2 {
+      font-size: clamp(12px, 1.6vw, 16px);
+      letter-spacing: 0.28em;
+      font-weight: 400;
+      color: var(--dim);
+      text-transform: lowercase;
+      margin-bottom: 28px;
+    }
+
+    .level-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      margin-bottom: 36px;
+    }
+
+    .level-btn {
+      background: transparent;
+      border: 1px solid #222;
+      color: #888;
+      font-family: 'Georgia', serif;
+      font-size: clamp(10px, 1.3vw, 13px);
+      padding: 14px 10px 10px;
+      cursor: pointer;
+      text-align: center;
+      border-radius: 2px;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      line-height: 1.35;
+    }
+    .level-btn:hover {
+      border-color: #555;
+      color: #fff;
+      background: #0d0d0d;
+    }
+    .level-btn.selected {
+      border-color: var(--orp);
+      color: #fff;
+      background: #110000;
+    }
+    .level-btn .level-wpm {
+      font-size: clamp(9px, 1.1vw, 11px);
+      letter-spacing: 0.2em;
+      color: var(--orp);
+      opacity: 0.7;
+    }
+    .level-btn.selected .level-wpm { opacity: 1; }
+
+    /* boring slider */
+    .boring-slider-wrap {
+      width: 100%;
+      border-top: 1px solid #1a1a1a;
+      padding-top: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .boring-label {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      color: #2e2e2e;
+      text-transform: lowercase;
+    }
+
+    .boring-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #boring-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 1px;
+      background: #222;
+      outline: none;
+      cursor: pointer;
+    }
+    #boring-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: #555;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #boring-slider::-webkit-slider-thumb:hover { background: #fff; }
+    #boring-slider::-moz-range-thumb {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: #555;
+      border: none;
+    }
+
+    #boring-wpm-display {
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      color: #444;
+      min-width: 52px;
+      text-align: right;
+    }
+
+    #go-btn {
+      margin-top: 28px;
+      background: transparent;
+      border: 1px solid #333;
+      color: #fff;
+      font-family: 'Georgia', serif;
+      font-size: 14px;
+      padding: 11px 48px;
+      cursor: pointer;
+      letter-spacing: 0.18em;
+      border-radius: 2px;
+      text-transform: lowercase;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    #go-btn:hover { border-color: #fff; background: #0d0d0d; }
+
+    #speed-back-btn {
+      position: fixed;
+      top: 26px; left: 26px;
+      background: transparent;
+      border: none;
+      color: #3a3a3a;
+      font-size: 22px;
+      cursor: pointer;
+      font-family: 'Georgia', serif;
+      transition: color 0.2s;
+    }
+    #speed-back-btn:hover { color: #fff; }
+
+    /* ── READER ── */
+    #reader {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      inset: 0;
+    }
+
+    /* ORP word layout — three spans, ORP always centered */
+    #word-display {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      width: 96vw;
+      font-size: clamp(38px, 7.5vw, 96px);
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      line-height: 1;
+      animation: flashIn 0.15s ease forwards;
+    }
+
+    #word-left {
+      flex: 1;
+      text-align: right;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    #word-orp {
+      flex-shrink: 0;
+      color: var(--orp);
+      position: relative;
+    }
+
+    /* thin vertical guide line through ORP */
+    #orp-guide {
+      position: fixed;
+      top: 0; bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      background: var(--orp);
+      opacity: 0.08;
+      pointer-events: none;
+    }
+
+    #word-right {
+      flex: 1;
+      text-align: left;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    /* flash animation per word */
+    @keyframes flashIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    #progress-bar {
+      position: fixed;
+      bottom: 0; left: 0;
+      height: 2px;
+      background: var(--orp);
+      width: 0%;
+      transition: width 0.12s linear;
+      opacity: 0.4;
+    }
+
+    /* ── BACK ── */
+    #back-btn {
+      position: fixed;
+      top: 26px; left: 26px;
+      background: transparent;
+      border: none;
+      color: #3a3a3a;
+      font-size: 22px;
+      cursor: pointer;
+      font-family: 'Georgia', serif;
+      transition: color 0.2s;
+    }
+    #back-btn:hover { color: #fff; }
+
+    /* ── SPEED CONTROL (top right) ── */
+    #speed-control {
+      position: fixed;
+      top: 26px; right: 26px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    #wpm-label {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: #3a3a3a;
+      text-transform: lowercase;
+    }
+
+    #wpm-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 120px;
+      height: 2px;
+      background: #2a2a2a;
+      outline: none;
+      cursor: pointer;
+      border-radius: 1px;
+    }
+    #wpm-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--orp);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    #wpm-slider::-webkit-slider-thumb:hover { transform: scale(1.3); }
+    #wpm-slider::-moz-range-thumb {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--orp);
+      border: none;
+      cursor: pointer;
+    }
+
+    /* ── PAUSE ── */
+    #pause-btn {
+      position: fixed;
+      bottom: 26px; left: 50%;
+      transform: translateX(-50%);
+      background: transparent;
+      border: none;
+      color: #2e2e2e;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      cursor: pointer;
+      font-family: 'Georgia', serif;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    #pause-btn:hover { color: #888; }
+
+    /* ── BG PICKER ── */
+    #bg-picker {
+      position: fixed;
+      bottom: 26px; right: 26px;
+      display: flex;
+      gap: 7px;
+      align-items: center;
+    }
+    .bg-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .bg-dot:hover, .bg-dot.selected {
+      border-color: #fff;
+      transform: scale(1.25);
+    }
+
+    /* ── CATEGORY LABEL ── */
+    #category-label {
+      position: fixed;
+      top: 26px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      color: #2e2e2e;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* ── DONE ── */
+    #done-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 26px;
+      animation: fadeIn 0.8s ease forwards;
+    }
+    #done-screen p {
+      font-size: clamp(14px, 2vw, 20px);
+      color: #444;
+      letter-spacing: 0.06em;
+    }
+    .again-btn {
+      background: transparent;
+      border: 1px solid #2a2a2a;
+      color: #fff;
+      font-family: 'Georgia', serif;
+      font-size: 15px;
+      padding: 11px 34px;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      border-radius: 2px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .again-btn:hover { border-color: #fff; background: #0d0d0d; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── TRIVIA OVERLAY ── */
+    #trivia-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    #trivia-card {
+      background: #080808;
+      border: 1px solid #1e1e1e;
+      border-radius: 3px;
+      padding: 36px 40px;
+      max-width: 480px;
+      width: 90vw;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      animation: fadeIn 0.3s ease forwards;
+    }
+    #trivia-label {
+      font-size: 10px;
+      letter-spacing: 0.32em;
+      color: #2e2e2e;
+      text-transform: uppercase;
+    }
+    #trivia-question {
+      font-size: clamp(14px, 2vw, 17px);
+      color: #bbb;
+      line-height: 1.55;
+      letter-spacing: 0.02em;
+    }
+    #trivia-opts {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .trivia-opt {
+      background: transparent;
+      border: 1px solid #1e1e1e;
+      color: #666;
+      font-family: 'Georgia', serif;
+      font-size: clamp(12px, 1.5vw, 14px);
+      padding: 10px 16px;
+      cursor: pointer;
+      text-align: left;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .trivia-opt:hover:not(:disabled) { border-color: #444; color: #ddd; }
+    .trivia-opt:disabled { cursor: default; }
+    .trivia-opt.correct { border-color: #2a6e2a; color: #5db85d; background: #050f05; }
+    .trivia-opt.wrong   { border-color: #5c1e1e; color: #8a4444; background: #0f0505; }
+    #trivia-skip {
+      background: transparent;
+      border: none;
+      color: #222;
+      font-family: 'Georgia', serif;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      text-align: center;
+      padding: 2px;
+      margin-top: 2px;
+      transition: color 0.2s;
+    }
+    #trivia-skip:hover { color: #555; }
+
+    /* ── TRIVIA TOGGLE BTN ── */
+    #trivia-toggle-btn {
+      position: fixed;
+      bottom: 26px; left: 26px;
+      background: #c8a800;
+      border: none;
+      color: #000;
+      font-family: 'Georgia', serif;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      text-transform: lowercase;
+      transition: left 0.5s ease, top 0.5s ease, bottom 0.5s ease;
+      max-width: 160px;
+      text-align: center;
+      line-height: 1.4;
+      padding: 8px 12px;
+      border-radius: 2px;
+      z-index: 200;
+    }
+    #trivia-toggle-btn:hover { background: #e0be00; }
+  </style>
+</head>
+<body>
+
+<!-- MENU -->
+<div id="menu">
+  <h1>what do you want?</h1>
+  <button class="choice-btn" onclick="pickCategory('joke')"><span class="emoji">😂</span>tell me a joke</button>
+  <button class="choice-btn" onclick="pickCategory('raccoon')"><span class="emoji">🦝</span>raccoon fact</button>
+  <button class="choice-btn" onclick="pickCategory('quote')"><span class="emoji">✦</span>famous quote</button>
+  <button class="choice-btn" onclick="pickCategory('book')"><span class="emoji">📖</span>classic book passage</button>
+  <button class="choice-btn" onclick="pickCategory('littleprince')"><span class="emoji">🌹</span>the little prince</button>
+</div>
+
+<!-- SPEED SCREEN -->
+<div id="speed-screen">
+  <button id="speed-back-btn" onclick="showMenu()">←</button>
+  <h2>choose your level of difficulty</h2>
+  <div class="level-grid" id="level-grid"></div>
+  <button id="go-btn" onclick="launchReader()">go →</button>
+</div>
+
+<!-- READER -->
+<div id="reader">
+  <div id="orp-guide"></div>
+  <div id="category-label"></div>
+  <button id="back-btn" onclick="showMenu()">←</button>
+
+  <div id="word-display">
+    <span id="word-left"></span><span id="word-orp"></span><span id="word-right"></span>
+  </div>
+
+  <button id="pause-btn" onclick="togglePause()">pause</button>
+  <div id="progress-bar"></div>
+  <div id="bg-picker"></div>
+</div>
+
+<!-- TRIVIA TOGGLE (always present) -->
+<button id="trivia-toggle-btn" onclick="toggleTrivia()">turn trivia annoying ahh mode off</button>
+
+<!-- TRIVIA OVERLAY -->
+<div id="trivia-overlay">
+  <div id="trivia-card">
+    <span id="trivia-label">trivia interruption</span>
+    <p id="trivia-question"></p>
+    <div id="trivia-opts"></div>
+    <button id="trivia-skip" onclick="dismissTrivia()">skip →</button>
+  </div>
+</div>
+
+<!-- DONE -->
+<div id="done-screen">
+  <p id="done-msg"></p>
+  <button class="again-btn" onclick="showMenu()">back to menu</button>
+  <button class="again-btn" onclick="startSame()">another one</button>
+</div>
+
+<script>
+const CONTENT = {
+  joke: [
+    "Why don't scientists trust atoms? Because they make up everything.",
+    "I told my wife she was drawing her eyebrows too high. She looked surprised.",
+    "Why did the scarecrow win an award? Because he was outstanding in his field.",
+    "I'm reading a book about anti-gravity. It's impossible to put down.",
+    "What do you call a fake noodle? An impasta.",
+    "I used to hate facial hair, but then it grew on me.",
+    "Why do cows wear bells? Because their horns don't work.",
+    "I asked the librarian if they had books about paranoia. She whispered: they're right behind you.",
+    "What's the best thing about Switzerland? I don't know, but the flag is a big plus.",
+    "I'm on a seafood diet. I see food and I eat it.",
+    "Did I tell you the joke about construction? I'm still working on it.",
+    "Why don't eggs tell jokes? They'd crack each other up.",
+  ],
+  raccoon: [
+    "Raccoons wash their food before eating — not for cleanliness, but because water makes their paws more sensitive, helping them feel what they're holding.",
+    "A group of raccoons is called a gaze. Also occasionally a nursery, or a band.",
+    "Raccoons can remember solutions to tasks for up to three years, longer than most mammals their size.",
+    "Baby raccoons are called kits, and they chirp like birds when they're very young.",
+    "Raccoons can open latches, doorknobs, and even some locks. They have been found in hotel rooms.",
+    "In Japan, raccoons were imported as exotic pets after a popular 1970s anime. They escaped and now there are feral raccoons living in Hokkaido.",
+    "Raccoons have a special section of their brain dedicated to touch — almost the entire front half is devoted to processing what their paws feel.",
+    "The name raccoon comes from the Algonquin word arakun, meaning he who scratches with his hands.",
+    "Raccoons don't actually hibernate, but in very cold winters they can sleep for weeks at a time, living off stored fat.",
+    "Urban raccoons have been shown to be significantly smarter than rural raccoons, likely due to problem-solving challenges posed by city life.",
+    "A raccoon can rotate its hind feet 180 degrees, allowing it to climb down trees headfirst.",
+    "In 1926, President Coolidge was sent a raccoon named Rebecca as a Thanksgiving dinner. He kept her as a White House pet instead.",
+  ],
+  quote: [
+    "The only way out of the labyrinth of suffering is to forgive. — John Green",
+    "It is not our abilities that show what we truly are. It is our choices. — J.K. Rowling",
+    "In the middle of difficulty lies opportunity. — Albert Einstein",
+    "The most common form of despair is not being who you are. — Søren Kierkegaard",
+    "You only live once, but if you do it right, once is enough. — Mae West",
+    "Two things are infinite: the universe and human stupidity; and I'm not sure about the universe. — Einstein",
+    "Everything you can imagine is real. — Pablo Picasso",
+    "To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment. — Emerson",
+    "Not all those who wander are lost. — Tolkien",
+    "It does not do to dwell on dreams and forget to live. — Dumbledore",
+    "I am not afraid of storms, for I am learning how to sail my ship. — Louisa May Alcott",
+    "The very worst part of grief is that you can't control it. — Fredrik Backman",
+    "We accept the love we think we deserve. — Stephen Chbosky",
+    "I took a deep breath and listened to the old brag of my heart: I am, I am, I am. — Sylvia Plath",
+    "To live is the rarest thing in the world. Most people just exist. — Oscar Wilde",
+  ],
+  book: [
+    "It was hard to tell when Beth had left one shore of the river for the other, so peaceful was the passage. For, as she had slept a great deal lately, those about her did not realize the change at first; and presently, when they looked upon her, she was gone. Jo lay still in the darkness, trying to feel the grief, but finding only a great quiet, as if at last the long storm had blown itself out and left a clear sky behind. — Little Women",
+    "I'm not asking you to be anything you are not, Laurie. I'm only saying that I cannot love you as you wish, and it would be dishonest to pretend otherwise. You deserve something true. — Little Women",
+    "I cannot live without my life! I cannot live without my soul! — Wuthering Heights, Emily Bronte",
+    "He burst the window open. The cold seeped in. He called her name into the wind, the moor, the dark. He called it for the rest of his life. — Wuthering Heights",
+    "In vain I have struggled. It will not do. My feelings will not be repressed. You must allow me to tell you how ardently I admire and love you. — Pride and Prejudice, Jane Austen",
+    "It is a far, far better thing that I do, than I have ever done; it is a far, far better rest that I go to than I have ever known. — A Tale of Two Cities, Charles Dickens",
+    "So we beat on, boats against the current, borne back ceaselessly into the past. — The Great Gatsby, F. Scott Fitzgerald",
+    "I am no bird; and no net ensnares me: I am a free human being with an independent will. — Jane Eyre, Charlotte Bronte",
+    "He stepped down, trying not to look long at her, as if she were the sun, yet he saw her, like the sun, even without looking. — Anna Karenina, Tolstoy",
+    "And George raised the gun and steadied it, and he brought it close to the back of Lennie's head. The hand shook violently, but his face set and his hand steadied. He pulled the trigger. — Of Mice and Men, Steinbeck",
+    "I took a deep breath and listened to the old brag of my heart: I am, I am, I am. — The Bell Jar, Sylvia Plath",
+  ],
+};
+
+const LABELS = {
+  joke: 'joke',
+  raccoon: 'raccoon fact',
+  quote: 'famous quote',
+  book: 'classic literature',
+  littleprince: 'the little prince',
+};
+
+// ORP colors per background theme
+const BG_OPTIONS = [
+  { bg: '#000000', text: '#ffffff', orp: '#e84040' },
+  { bg: '#0d0d1a', text: '#c8c8ff', orp: '#e87070' },
+  { bg: '#1a0d0d', text: '#ffc8c8', orp: '#ff7b7b' },
+  { bg: '#0d1a0d', text: '#c8ffc8', orp: '#ff5c5c' },
+  { bg: '#1a1a0a', text: '#ffffc0', orp: '#ff5555' },
+  { bg: '#f0ece2', text: '#1a1a1a', orp: '#cc2222' },
+];
+
+let wordTimer = null;
+let words = [];
+let wordIndex = 0;
+let msPerWord = 240; // 250 wpm default
+let paused = false;
+let currentCategory = null;
+
+let triviaOn = true;
+let triviaTimer = null;
+let triviaWasPaused = false;
+
+// ── ORP INDEX ────────────────────────────────────────────────
+// Spritz-style: the "focus letter" is roughly 30% into the word.
+// Strip leading/trailing punctuation when measuring length.
+function getOrpIndex(word) {
+  const clean = word.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '');
+  const len = (clean || word).length;
+  if (len <= 1) return 0;
+  if (len <= 3) return 0;
+  if (len <= 6) return 1;
+  if (len <= 9) return 2;
+  if (len <= 13) return 3;
+  return 4;
+}
+
+function renderWord(word) {
+  const idx = getOrpIndex(word);
+  const left  = word.slice(0, idx);
+  const orp   = word.slice(idx, idx + 1);
+  const right = word.slice(idx + 1);
+
+  // Re-trigger flash animation
+  const display = document.getElementById('word-display');
+  display.style.animation = 'none';
+  void display.offsetWidth;
+  display.style.animation = 'flashIn 0.15s ease forwards';
+
+  document.getElementById('word-left').textContent  = left;
+  document.getElementById('word-orp').textContent   = orp;
+  document.getElementById('word-right').textContent = right;
+}
+
+// ── LEVELS ───────────────────────────────────────────────────
+const LEVELS = [
+  { wpm: 100, name: 'watching a snail cross a parking lot and you genuinely have nowhere to be' },
+  { wpm: 150, name: 'eating soup with a fork because all the spoons are dirty and you have a point to prove' },
+  { wpm: 200, name: 'someone is telling you their dream and they keep saying "and then" and "and then"' },
+  { wpm: 250, name: 'dying of thirst but you\'re lactose intolerant and there\'s only milk on the island you\'re on' },
+  { wpm: 310, name: 'you said "you too" when the waiter said "enjoy your meal" and you\'re still thinking about it' },
+  { wpm: 380, name: 'your uber driver is going the wrong way and you\'re too polite to say anything' },
+  { wpm: 460, name: 'you made eye contact with a stranger on the street for too long and now you\'re both committed to something' },
+  { wpm: 540, name: 'you ordered something spicy to impress someone and your eyes are watering and you will not acknowledge it' },
+  { wpm: 630, name: 'there is a bee in the car' },
+];
+
+function wpmToMs(wpm) { return Math.round(60000 / wpm); }
+
+function buildLevelGrid() {
+  const grid = document.getElementById('level-grid');
+  grid.innerHTML = '';
+  LEVELS.forEach((lvl, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'level-btn' + (i === 3 ? ' selected' : '');
+    btn.innerHTML = `<span>${lvl.name}</span>`;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      msPerWord = wpmToMs(lvl.wpm);
+    });
+    grid.appendChild(btn);
+  });
+  // default to level 4 (index 3)
+  msPerWord = wpmToMs(LEVELS[3].wpm);
+}
+
+
+function pickCategory(category) {
+  currentCategory = category;
+  document.getElementById('menu').style.display = 'none';
+  buildLevelGrid();
+  const ss = document.getElementById('speed-screen');
+  ss.style.display = 'flex';
+  ss.style.animation = 'none';
+  void ss.offsetWidth;
+  ss.style.animation = 'fadeIn 0.4s ease forwards';
+}
+
+function launchReader() {
+  document.getElementById('speed-screen').style.display = 'none';
+  startReader();
+}
+
+// ── BG PICKER ────────────────────────────────────────────────
+function buildBgPicker() {
+  const picker = document.getElementById('bg-picker');
+  picker.innerHTML = '';
+  BG_OPTIONS.forEach((opt, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'bg-dot' + (i === 0 ? ' selected' : '');
+    dot.style.background = opt.bg;
+    dot.style.border = `2px solid ${i === 0 ? '#333' : opt.bg}`;
+    dot.addEventListener('click', () => {
+      document.documentElement.style.setProperty('--bg', opt.bg);
+      document.documentElement.style.setProperty('--text', opt.text);
+      document.documentElement.style.setProperty('--orp', opt.orp);
+      document.body.style.background = opt.bg;
+      document.getElementById('word-left').style.color  = opt.text;
+      document.getElementById('word-right').style.color = opt.text;
+      document.getElementById('word-orp').style.color   = opt.orp;
+      document.querySelectorAll('.bg-dot').forEach(d => d.classList.remove('selected'));
+      dot.classList.add('selected');
+    });
+    picker.appendChild(dot);
+  });
+}
+
+// ── CORE LOOP ─────────────────────────────────────────────────
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function startReader() {
+  const text = pick(CONTENT[currentCategory]);
+  words = text.split(/\s+/).filter(Boolean);
+  wordIndex = 0;
+  paused = false;
+
+  document.getElementById('done-screen').style.display = 'none';
+  const reader = document.getElementById('reader');
+  reader.style.display = 'flex';
+  document.getElementById('category-label').textContent = LABELS[currentCategory];
+  document.getElementById('pause-btn').textContent = 'pause';
+  document.getElementById('progress-bar').style.width = '0%';
+
+  // Reset colors to default
+  document.getElementById('word-left').style.color  = '';
+  document.getElementById('word-right').style.color = '';
+  document.getElementById('word-orp').style.color   = '';
+  document.documentElement.style.setProperty('--orp', '#e84040');
+
+  buildBgPicker();
+  triviaOn = true;
+  document.getElementById('trivia-toggle-btn').textContent = 'turn trivia annoying ahh mode off';
+  clearTimeout(wordTimer);
+  showNextWord();
+  scheduleTrivia();
+}
+
+function startSame() {
+  if (!currentCategory) return;
+  document.getElementById('done-screen').style.display = 'none';
+  buildLevelGrid();
+  const ss = document.getElementById('speed-screen');
+  ss.style.display = 'flex';
+  ss.style.animation = 'none';
+  void ss.offsetWidth;
+  ss.style.animation = 'fadeIn 0.4s ease forwards';
+}
+
+function showNextWord() {
+  if (wordIndex >= words.length) { finish(); return; }
+
+  const w = words[wordIndex];
+  renderWord(w);
+
+  const pct = ((wordIndex + 1) / words.length) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+
+  wordIndex++;
+
+  // Adaptive pause on punctuation
+  let delay = msPerWord;
+  if (/[.!?]$/.test(w))  delay = msPerWord * 2.6;
+  else if (/[,;:]$/.test(w)) delay = msPerWord * 1.5;
+  else if (w.length <= 2)    delay = msPerWord * 0.75;
+
+  if (!paused) wordTimer = setTimeout(showNextWord, delay);
+}
+
+function togglePause() {
+  paused = !paused;
+  document.getElementById('pause-btn').textContent = paused ? 'resume' : 'pause';
+  if (!paused) showNextWord();
+  else clearTimeout(wordTimer);
+}
+
+function finish() {
+  document.getElementById('reader').style.display = 'none';
+  const done = document.getElementById('done-screen');
+  done.style.display = 'flex';
+  const endings = ['the end.', "that's it.", '✦', 'fin.', '.'];
+  document.getElementById('done-msg').textContent = endings[Math.floor(Math.random() * endings.length)];
+}
+
+function showMenu() {
+  clearTimeout(wordTimer);
+  paused = false;
+  document.getElementById('reader').style.display = 'none';
+  document.getElementById('done-screen').style.display = 'none';
+  document.getElementById('speed-screen').style.display = 'none';
+  const menu = document.getElementById('menu');
+  menu.style.display = 'flex';
+  menu.style.animation = 'none';
+  void menu.offsetWidth;
+  menu.style.animation = 'fadeIn 0.5s ease forwards';
+}
+
+// Spacebar = pause/resume
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && document.getElementById('reader').style.display !== 'none') {
+    e.preventDefault();
+    togglePause();
+  }
+});
+
+// ── TRIVIA ───────────────────────────────────────────────────
+const TRIVIA = [
+  { q: "What is the name of the font used on the Hollywood sign?", opts: ["Clarendon", "Spencerian Script", "No standard font — it's hand-lettered", "Helvetica Bold"], answer: 2 },
+  { q: "How many times does the word 'very' appear in the King James Bible?", opts: ["0", "34", "289", "1,102"], answer: 0 },
+  { q: "What was the original purpose of the Eiffel Tower?", opts: ["War observation post", "Radio transmission tower", "Temporary entrance arch for the 1889 World's Fair", "Monument to Napoleon"], answer: 2 },
+  { q: "Which US president had a pet hyena?", opts: ["Theodore Roosevelt", "Martin Van Buren", "John Quincy Adams", "Herbert Hoover"], answer: 0 },
+  { q: "What is the Lindy effect?", opts: ["A swing dance from the 1920s", "The longer something has survived, the longer it's likely to keep surviving", "The tendency for news to spread slower than it spreads back", "A cognitive bias toward linear thinking"], answer: 1 },
+  { q: "What color is a mirror?", opts: ["White", "Silver", "Slightly green", "It has no color"], answer: 2 },
+  { q: "In what year was the fax machine invented?", opts: ["1964", "1902", "1843", "1876"], answer: 2 },
+  { q: "What is the most shoplifted book in the world?", opts: ["The Bible", "The Guinness Book of World Records", "The Catcher in the Rye", "Harry Potter"], answer: 0 },
+  { q: "How long did the Hundred Years' War actually last?", opts: ["100 years", "112 years", "87 years", "116 years"], answer: 3 },
+  { q: "What flavor is a McRib patty shaped to resemble?", opts: ["No particular shape — it's just flat", "A rack of ribs", "A pork chop", "A pulled pork sandwich"], answer: 1 },
+  { q: "Which planet rains diamonds?", opts: ["Jupiter", "Saturn", "Uranus and Neptune", "Venus"], answer: 2 },
+  { q: "What does the 'H' stand for in Jesus H. Christ?", opts: ["It doesn't stand for anything — it's a printing error from old typesetting", "Harold, from 'Our Father who art in heaven, Harold be thy name'", "Holy", "It's a monogram from the Greek ΙΧΘΥΣ"], answer: 0 },
+  { q: "How many golf balls fit on a school bus?", opts: ["Around 500", "Around 2,500", "Around 8,000", "Around 50,000"], answer: 2 },
+  { q: "What is a group of crows called?", opts: ["A flock", "A murder", "A parliament", "A conspiracy"], answer: 1 },
+  { q: "Who invented the shopping cart?", opts: ["Henry Ford", "Sylvan Goldman", "A Piggly Wiggly employee in 1920", "Sam Walton"], answer: 1 },
+  { q: "What is the longest word you can type using only the top row of a keyboard?", opts: ["TYPEWRITER", "PERPETUITY", "PROPRIETOR", "PROTOTYPE"], answer: 0 },
+  { q: "What is the official state fossil of California?", opts: ["T. Rex", "The saber-toothed cat", "The woolly mammoth", "A giant ground sloth"], answer: 1 },
+  { q: "How many hearts does a hagfish have?", opts: ["1", "2", "3", "4"], answer: 3 },
+  { q: "What does a 'jiffy' actually measure in physics?", opts: ["One millisecond", "The time it takes light to travel 1 centimeter", "0.01 seconds", "One frame of film at 24fps"], answer: 1 },
+  { q: "What was Coca-Cola's original color?", opts: ["Clear", "Brown", "Green", "It was always the same"], answer: 2 },
+  { q: "How many muscles does a caterpillar have?", opts: ["Around 100", "Around 800", "Around 4,000", "Around 12,000"], answer: 2 },
+  { q: "What is the name of the font on the 'I ♥ NY' logo?", opts: ["Helvetica", "American Typewriter", "Futura", "Times New Roman"], answer: 1 },
+  { q: "What country has the most natural lakes?", opts: ["Russia", "USA", "Finland", "Canada"], answer: 3 },
+  { q: "What was the first item ever bought and sold on the internet?", opts: ["A book", "A pizza", "A bag of marijuana", "A broken laser pointer"], answer: 2 },
+];
+
+function scheduleTrivia() {
+  clearTimeout(triviaTimer);
+  if (triviaOn) triviaTimer = setTimeout(showTrivia, 10000);
+}
+
+function showTrivia() {
+  if (!triviaOn) return;
+  triviaWasPaused = paused;
+  if (!paused) { paused = true; clearTimeout(wordTimer); }
+
+  const q = TRIVIA[Math.floor(Math.random() * TRIVIA.length)];
+  document.getElementById('trivia-question').textContent = q.q;
+  const optsEl = document.getElementById('trivia-opts');
+  optsEl.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'trivia-opt';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => {
+      optsEl.querySelectorAll('.trivia-opt').forEach(b => b.disabled = true);
+      btn.classList.add(i === q.answer ? 'correct' : 'wrong');
+      if (i !== q.answer) optsEl.querySelectorAll('.trivia-opt')[q.answer].classList.add('correct');
+      setTimeout(dismissTrivia, 1800);
+    });
+    optsEl.appendChild(btn);
+  });
+
+  document.getElementById('trivia-overlay').style.display = 'flex';
+}
+
+function dismissTrivia() {
+  document.getElementById('trivia-overlay').style.display = 'none';
+  const readerActive = document.getElementById('reader').style.display !== 'none';
+  if (readerActive && !triviaWasPaused) { paused = false; showNextWord(); }
+  else if (readerActive && triviaWasPaused) { paused = true; }
+  scheduleTrivia();
+}
+
+function toggleTrivia() {
+  triviaOn = !triviaOn;
+  const btn = document.getElementById('trivia-toggle-btn');
+  btn.textContent = triviaOn ? 'turn trivia annoying ahh mode off' : 'turn trivia annoying ahh mode on';
+  if (triviaOn) scheduleTrivia();
+  else clearTimeout(triviaTimer);
+}
+
+// start trivia running from page load
+scheduleTrivia();
+
+// ── RUNAWAY BUTTON ───────────────────────────────────────────
+let btnX = null, btnY = null;
+
+document.addEventListener('mousemove', (e) => {
+  const btn = document.getElementById('trivia-toggle-btn');
+  const rect = btn.getBoundingClientRect();
+
+  // initialise position from current CSS on first move
+  if (btnX === null) {
+    btnX = rect.left;
+    btnY = rect.top;
+    btn.style.bottom = 'auto';
+    btn.style.right  = 'auto';
+    btn.style.left   = btnX + 'px';
+    btn.style.top    = btnY + 'px';
+  }
+
+  const cx = rect.left + rect.width  / 2;
+  const cy = rect.top  + rect.height / 2;
+  const dx = e.clientX - cx;
+  const dy = e.clientY - cy;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+
+  if (dist < 110) {
+    const angle = Math.atan2(dy, dx);
+    const step  = 55;
+    btnX -= Math.cos(angle) * step;
+    btnY -= Math.sin(angle) * step;
+
+    // keep fully inside viewport
+    btnX = Math.max(8, Math.min(window.innerWidth  - rect.width  - 8, btnX));
+    btnY = Math.max(8, Math.min(window.innerHeight - rect.height - 8, btnY));
+
+    btn.style.left = btnX + 'px';
+    btn.style.top  = btnY + 'px';
+  }
+});
+</script>
+</body>
+</html>
